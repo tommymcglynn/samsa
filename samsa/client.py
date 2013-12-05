@@ -398,11 +398,12 @@ class Connection(object):
                 else:
                     logger.error("Socket error: %s" % e)
                 if retry_count < 1:
-                    self.reconnect()
                     retry_count += 1
+                    self.reconnect()
                     try_request()
                 else:
                     self.disconnect()
+        try_request()
 
     def response(self, future):
         """Wait for a response and assign to future.
