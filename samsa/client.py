@@ -383,8 +383,26 @@ class Connection(object):
         :type request: :class:`samsa.utils.structuredio.StructuredBytesIO`
 
         """
-        # TODO: Retry/reconnect on failure?
-        self._socket.sendall(str(request.wrap(4)))
+        retry_count = 0
+        def try_request(self):
+            try:
+                self._socket.sendall(str(request.wrap(4)))
+            except socket.error, e:
+                if isinstance(e.args, tuple):
+                    logger.error("Socket error: errno is %d" % e[0])
+                    if e[0] == errno.EPIPE:
+                       # remote peer disconnected
+                    else:
+                       # determine and handle different error
+                       pass
+                else:
+                    logger.error("Socket error: %s" % e)
+                if retry_count < 1:
+                    self.reconnect()
+                    retry_count += 1
+                    try_request()
+                else:
+                    self.disconnect()
 
     def response(self, future):
         """Wait for a response and assign to future.
