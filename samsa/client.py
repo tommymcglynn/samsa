@@ -517,8 +517,8 @@ class Client(object):
             return decode_messages(response.get(), from_offset=offset)
         except SocketDisconnectedError:
             return []
-        except Error as e:
-            print 'Error at offset %s: %s' % (e, offset)
+        except Exception as e:
+            print 'Exception at offset %s: %s' % (e, offset)
 
     def multifetch(self, data):
         """
