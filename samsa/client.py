@@ -403,6 +403,7 @@ class Connection(object):
         if header.error:
             exception_class = ERROR_CODES.get(header.error, -1)
             # TODO: Add better error messaging.
+            logger.error('Response header error: %s' % header.error)
             future.set_error(exception_class)
         else:
             future.set_response(buffer(response, ResponseErrorHeader.size))
@@ -516,6 +517,8 @@ class Client(object):
             return decode_messages(response.get(), from_offset=offset)
         except SocketDisconnectedError:
             return []
+        except Error as e:
+            print 'Error at offset %s: %s' % (e, offset)
 
     def multifetch(self, data):
         """
