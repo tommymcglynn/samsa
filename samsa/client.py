@@ -15,9 +15,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import errno
 import logging
 import socket
 import struct
+import sys
 from zlib import crc32
 
 from samsa import handlers
@@ -383,8 +385,28 @@ class Connection(object):
         :type request: :class:`samsa.utils.structuredio.StructuredBytesIO`
 
         """
-        # TODO: Retry/reconnect on failure?
-        self._socket.sendall(str(request.wrap(4)))
+        retry_count = 0
+        def try_request():
+            try:
+                self._socket.sendall(str(request.wrap(4)))
+            except socket.error, e:
+                if isinstance(e.args, tuple):
+                    logger.error("Socket error: errno is %d" % e[0])
+                    if e[0] == errno.EPIPE:
+                       # remote peer disconnected
+                       pass
+                    else:
+                       # determine and handle different error
+                       pass
+                else:
+                    logger.error("Socket error: %s" % e)
+                if retry_count < 1:
+                    retry_count += 1
+                    self.reconnect()
+                    try_request()
+                else:
+                    self.disconnect()
+        try_request()
 
     def response(self, future):
         """Wait for a response and assign to future.
@@ -517,8 +539,10 @@ class Client(object):
             return decode_messages(response.get(), from_offset=offset)
         except SocketDisconnectedError:
             return []
-        except Exception as e:
-            print 'Exception at offset %s: %s' % (e, offset)
+        except:
+            e = sys.exc_info()[0]
+            logger.error('Exception at offset %s: %s' % (offset, e))
+            raise
 
     def multifetch(self, data):
         """
