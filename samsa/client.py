@@ -405,7 +405,7 @@ class Connection(object):
                     self.reconnect()
                     try_request()
                 else:
-                    self.disconnect()
+                    self.reconnect()
         try_request()
 
     def response(self, future):
@@ -540,7 +540,7 @@ class Client(object):
             return []
         except:
             e = sys.exc_info()[0]
-            logger.error('Exception at offset %s: %s' % (offset, e))
+            logger.error('Exception topic %s, partition %s, offset %s: %s' % (topic, partition, offset, e))
             raise
 
     def multifetch(self, data):
