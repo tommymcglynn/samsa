@@ -375,6 +375,7 @@ class Connection(object):
             self._socket = None
 
     def reconnect(self):
+        logger.error('Will attempt reconnect')
         self.disconnect()
         self.connect()
 
@@ -386,27 +387,23 @@ class Connection(object):
 
         """
         retry_count = 0
-        def try_request():
+        retry_max = 2
+        sent = False
+        if not self.connected:
+            logger.warn('Attempted request while disconnected')
+            self.reconnect()
+        while not sent:
             try:
                 self._socket.sendall(str(request.wrap(4)))
+                sent = True
             except socket.error, e:
                 if isinstance(e.args, tuple):
                     logger.error("Socket error: errno is %d" % e[0])
-                    if e[0] == errno.EPIPE:
-                       # remote peer disconnected
-                       pass
-                    else:
-                       # determine and handle different error
-                       pass
                 else:
                     logger.error("Socket error: %s" % e)
-                if retry_count < 1:
-                    retry_count += 1
-                    self.reconnect()
-                    try_request()
-                else:
-                    self.reconnect()
-        try_request()
+                self.reconnect()
+                if retry_count >= retry_max:
+                    break
 
     def response(self, future):
         """Wait for a response and assign to future.
