@@ -369,7 +369,7 @@ class Connection(object):
         """
         try:
             self._socket.close()
-        except IOError:
+        except:
             pass
         finally:
             self._socket = None
